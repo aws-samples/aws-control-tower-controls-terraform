@@ -1,0 +1,73 @@
+default_language_version:
+  python: python3.10
+
+default_stages:
+  - commit
+  - push
+
+fail_fast: False
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0 # Get the latest from: https://github.com/pre-commit/pre-commit-hooks/releases
+    hooks:
+      - id: check-added-large-files
+      - id: check-case-conflict
+      - id: check-docstring-first
+      - id: check-merge-conflict
+      - id: check-symlinks
+      - id: check-yaml
+      - id: debug-statements
+      - id: detect-aws-credentials
+        args:
+          - --allow-missing-credentials
+      - id: detect-private-key
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+        args: [--fix=lf]
+      - id: requirements-txt-fixer
+      - id: trailing-whitespace
+
+  - repo: meta
+    hooks:
+      - id: check-useless-excludes
+
+  - repo: https://github.com/jorisroovers/gitlint
+    rev: v0.19.1 # Get the latest from: https://github.com/jorisroovers/gitlint/releases
+    hooks:
+      - id: gitlint
+        stages: [commit-msg]
+
+  - repo: https://github.com/asottile/add-trailing-comma
+    rev: v2.5.1 # Get the latest from: https://github.com/asottile/add-trailing-comma
+    hooks:
+      - id: add-trailing-comma
+
+  - repo: https://github.com/gruntwork-io/pre-commit
+    rev: v0.1.22 # Get the latest from: https://github.com/gruntwork-io/pre-commit/releases
+    hooks:
+      - id: terraform-validate
+      - id: terraform-fmt
+      - id: shellcheck
+      - id: gofmt
+      - id: golint
+
+  - repo: https://github.com/antonbabenko/pre-commit-terraform
+    rev: v1.81.0 # Get the latest from: https://github.com/antonbabenko/pre-commit-terraform/releases
+    hooks:
+      - id: terraform_fmt
+      - id: terraform_tflint
+        args:
+          - --args=--module
+          - --args=--config=.tflint.hcl
+      - id: terraform_validate
+      - id: terraform_tfsec
+      - id: terraform_docs
+      - id: terraform_checkov
+
+  - repo: https://github.com/ambv/black
+    rev: 23.3.0 # Get the latest from: https://github.com/psf/black/releases
+    hooks:
+    - id: black
+      language_version: python3
+      args: ['--line-length', '80']

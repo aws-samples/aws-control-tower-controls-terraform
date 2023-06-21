@@ -1,0 +1,60 @@
+*.swp
+package-lock.json
+.pytest_cache
+*.egg-info
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# CDK Context & Staging files
+.cdk.staging/
+cdk.out/
+
+# Byte-compiled / optimized / DLL
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Coverage.py
+.coverage
+coverage.xml
+htmlcov/
+
+# Environment
+.venv/
+node_modules/
+
+# macOS
+.DS_Store
+
+# mypy
+.mypy_cache/
+
+# PyCharm
+.idea/
+
+# pyenv
+.python-version
+
+### Terraform ###
+# Local .terraform directories
+**/.terraform/*
+.terraform.lock.hcl
+
+# .tfstate files
+*.tfstate
+*.tfstate.*
