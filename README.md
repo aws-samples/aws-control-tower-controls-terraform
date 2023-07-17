@@ -1,39 +1,110 @@
-# CTC - Deploy and manage AWS Control Tower Controls (sometimes called guardrails) using Terraform and infrastructure as code
+# Deploy and manage AWS Control Tower controls by using Terraform
 
 
-
+- [AWS Prescriptive Guidance](#aws-prescriptive-guidance)
 - [Goal](#goal)
-- [Overview](#overview)
+- [Prerequisites and limitations](#prerequisites-and-limitations)
+- [Architecture](#architecture)
+- [Tools](#tools)
+- [Best practices](#best-practices)
+- [Control Behavior And Guidance](#control-behavior-and-guidance)
 - [Setup](#setup)
   - [Requirements](#requirements)
   - [Resources](#resources)
   - [Inputs](#inputs)
   - [Outputs](#outputs)
 - [Controls Configuration File](#controls-configuration-file)
-- [Control Behavior And Guidance](#control-behavior-and-guidance)
-- [Deployment](#deployment)
+- [Authors](#authors)
+- [Security](#security)
+- [License](#license)
 
+## AWS Prescriptive Guidance
+
+For a complete guide, prerequisites and instructions for using this AWS Prescriptive Guidance pattern, see [Deploy and manage AWS Control Tower controls by using Terraform](https://docs.aws.amazon.com/prescriptive-guidance/latest/patterns/deploy-and-manage-aws-control-tower-controls-by-using-terraform.html).
 
 ## Goal
 
-This pattern describes how to use AWS Control Tower Controls, Terraform and infrastructure as code (IaC) to implement and administer preventive, detective and proactive security on the Amazon Web Services (AWS) Cloud, for example, you can use controls to help ensure that security logs and necessary cross-account access permissions are created, and not altered.
+This pattern describes how to use AWS Control Tower controls, HashiCorp Terraform, and infrastructure as code (IaC) to implement and administer preventive, detective, and proactive security controls. A control (also known as a guardrail) is a high-level rule that provides ongoing governance for your overall AWS Control Tower environment. For example, you can use controls to require logging for your AWS accounts and then configure automatic notifications if specific security-related events occur.
 
-This IaC artifact (CTC or ControlTowerControls) is a collection of reusable resources that accelerate the delivery of preventive, detective and proactive security controls (sometimes called guardrails) on the AWS Cloud and helps with faster deployment to production. It is used to implement the foundational structure of an organization by following AWS Control Tower best practices.
+AWS Control Tower helps you implement preventive, detective, and proactive controls that govern your AWS resources and monitor compliance across multiple AWS accounts. Each control enforces a single rule. In this pattern, you use a provided IaC template to specify which controls you want to deploy in your environment.
 
-CTC implements a deployment process throughout IaC deployment by using services such Terraform.
+AWS Control Tower controls apply to an entire organizational unit (OU), and the control affects every AWS account within the OU. Therefore, when users perform any action in any account in your landing zone, the action is subject to the controls that govern the OU.
 
-Terraform service act as the IaC layer to provide reproducible and fast deployments with easy operations and administration.
+Implementing AWS Control Tower controls helps establish a strong security foundation for your AWS landing zone. By using this pattern to deploy the controls as IaC through Terraform, you can standardize the controls in your landing zone and more efficiently deploy and manage them.
 
-A control is a high-level rule that provides ongoing governance for your overall AWS environment. It's expressed in plain language. AWS Control Tower implements preventive, detective, and proactive controls that help you govern your resources and monitor compliance across groups of AWS accounts.
+### Target Audience
 
-A control applies to an entire organizational unit (OU), and every AWS account within the OU is affected by the control. Therefore, when users perform work in any AWS account in your landing zone, they're always subject to the controls that are governing their account's OU.
+This pattern is recommended for users who have experience with AWS Control Tower, Terraform, and AWS Organizations.
 
-## Overview
 
-The solution consists of the following:
-- A **set of Control Tower controls** to be deployed in the Control Tower master account with the desired controls to be deploy in the Lanzing Zone.
+## Prerequisites and limitations
+
+### Prerequisites
+
+- Active AWS accounts managed as an organization in AWS Organizations and an AWS Control Tower landing zone. For instructions, see [Create an account structure](https://www.wellarchitectedlabs.com/cost/100_labs/100_1_aws_account_setup/2_account_structure/) (AWS Well-Architected Labs).
+
+- AWS Command Line Interface (AWS CLI), [installed](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) and [configured](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html).
+
+- An AWS Identity and Access Management (IAM) role in the management account that has permissions to deploy this pattern. For more information about the required permissions and a sample policy, see Least privilege permissions for the IAM role in the [Additional information](https://docs.aws.amazon.com/prescriptive-guidance/latest/patterns/deploy-and-manage-aws-control-tower-controls-by-using-terraform.html#deploy-and-manage-aws-control-tower-controls-by-using-terraform-additional) section of this pattern.
+
+- Permissions to assume the IAM role in the management account.
+
+- Apply the service control policy (SCP)-based control with the identifier CLOUDFORMATION.PR.1. This SCP must be activated to deploy proactive controls. For instructions, see [Disallow management of resource types, modules, and hooks within the AWS CloudFormation registry.](https://docs.aws.amazon.com/controltower/latest/userguide/elective-controls.html#disallow-cfn-extensions)
+
+- Terraform CLI, [installed](https://developer.hashicorp.com/terraform/cli) (Terraform documentation).
+
+- Terraform AWS Provider, [configured](https://hashicorp.github.io/terraform-provider-aws/) (Terraform documentation).
+
+- Terraform backend, [configured](https://developer.hashicorp.com/terraform/language/settings/backends/configuration#using-a-backend-block) (Terraform documentation).
+
+## Architecture
+
+This section provides a high-level overview of this solution and the architecture established by the sample code. The following diagram shows controls deployed across the various accounts in the OU.
 
 ![Architecture](img/ctc-architecture.png)
+
+AWS Control Tower controls are categorized according to their behavior and their guidance.
+
+There are three primary types of control behaviors:
+
+1. Preventive controls are designed to prevent actions from occurring. These are implemented with [service control policies (SCPs)](https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_scps.html) in AWS Organizations. The status of a preventive control is either enforced or not enabled. Preventive controls are supported in all AWS Regions.
+
+2. Detective controls are designed to detect specific events when they occur and log the action in CloudTrail. These are implemented with AWS [Config rules](https://docs.aws.amazon.com/config/latest/developerguide/evaluate-config.html). The status of a detective control is either clear, in violation, or not enabled. Detective controls apply only in those AWS Regions supported by AWS Control Tower.
+
+3. Proactive controls scan resources that would be provisioned by AWS CloudFormation and check whether they are compliant with your company policies and objectives. Resources that are not compliant will not be provisioned. These are implemented with AWS [CloudFormation hooks](https://docs.aws.amazon.com/cloudformation-cli/latest/userguide/hooks.htmlhttps:/docs.aws.amazon.com/cloudformation-cli/latest/userguide/hooks.html). The status of a proactive control is PASS, FAIL, or SKIP.
+
+Control guidance refers to the recommended practice for how to apply each control to your OUs. AWS Control Tower provides three categories of guidance: mandatory, strongly recommended, and elective. The guidance of a control is independent of its behavior. For more information, see [Control behavior and guidance](https://docs.aws.amazon.com/controltower/latest/userguide/controls.html#control-behavior).
+
+
+## Tools
+
+### AWS services
+
+- [AWS CloudFormation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/Welcome.html) helps you set up AWS resources, provision them quickly and consistently, and manage them throughout their lifecycle across AWS accounts and Regions.
+
+- [AWS Config](https://docs.aws.amazon.com/config/latest/developerguide/WhatIsConfig.html) provides a detailed view of the resources in your AWS account and how they’re configured. It helps you identify how resources are related to one another and how their configurations have changed over time.
+
+- [AWS Control Tower](https://docs.aws.amazon.com/controltower/latest/userguide/what-is-control-tower.html) helps you set up and govern an AWS multi-account environment, following prescriptive best practices.
+
+- [AWS Organizations](https://docs.aws.amazon.com/organizations/latest/userguide/orgs_introduction.html) is an account management service that helps you consolidate multiple AWS accounts into an organization that you create and centrally manage.
+
+### Other tools
+
+- [HashiCorp Terraform](https://www.terraform.io/docs) is an open-source infrastructure as code (IaC) tool that helps you use code to provision and manage cloud infrastructure and resources.
+
+## Best practices
+
+- The IAM role used to deploy this solution should adhere to the [principle of least-privilege](https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html#grant-least-privilege) (IAM documentation).
+
+- Adhere to the [Best practices for AWS Control Tower administrators](https://docs.aws.amazon.com/controltower/latest/userguide/best-practices.html) (AWS Control Tower documentation).
+
+
+## Control Behavior And Guidance
+
+[Controls are categorized according to their behavior and their guidance.](https://docs.aws.amazon.com/controltower/latest/userguide/controls.html)
+
+[For a full list of preventive, detective and proactive available controls, see the The AWS Control Tower controls library.](https://docs.aws.amazon.com/controltower/latest/userguide/controls-reference.html)
+
 
 
 ## Setup
@@ -91,10 +162,9 @@ No modules.
 <!-- END OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
 
 
-Also, make sure that for deploying [proactive](https://docs.aws.amazon.com/controltower/latest/userguide/proactive-controls.html) controls you must previously apply an elective, SCP-based control with the identifier **CT.CLOUDFORMATION.PR.1** before you can activate proactive controls on an OU. See Disallow management of resource types, modules, and hooks within the AWS CloudFormation registry. If this SCP is not activated, you'll see an error message directing you to enable this control as a prerequisite, or showing it as a dependency for other proactive controls.
-
 ## Controls Configuration File
-Update the configuration file `variables.tfvars` like this example:
+
+The following is an example of an updated `variables.tfvars` file.
 ```
 controls = [
     {
@@ -102,49 +172,91 @@ controls = [
             "AWS-GR_ENCRYPTED_VOLUMES",
             ...
         ],
-        organizational_unit_ids = ["<Organizational Unit Id>", "<Organizational Unit Id>"...],
+        organizational_unit_ids = ["ou-1111-11111111", "ou-2222-22222222"...],
     },
     {
         control_names = [
             "AWS-GR_SUBNET_AUTO_ASSIGN_PUBLIC_IP_DISABLED",
             ...
         ],
-        organizational_unit_ids = ["<Organizational Unit Id>"...],
+        organizational_unit_ids = ["ou-1111-11111111"...],
     },
 ]
 ```
 
-The organizational unit ids should follow the pattern `^ou-[0-9a-z]{4,32}-[a-z0-9]{8,32}$`, for example, `ou-1111-11111111`.
+1. In the `controls` section, in the `control_names` parameter, enter the control API identifier. Each control has a unique API identifier for each Region in which AWS Control Tower is available. To find the control identifier, do the following:
 
-The `control_names` are found after the `“/”` of the `API controlIdentifier` see the next example of an `API controlIdentifier`: `arn:aws:controltower:REGION::control/CONTROL_NAME`.
+    1. In [Tables of control metadata](https://docs.aws.amazon.com/controltower/latest/userguide/control-metadata-tables.html), locate the control you want to enable.
 
+    2. In the Control API identifiers, by Region column, locate the API identifier for the Region in which you are making the API call, such as `arn:aws:controltower:us-east-1::control/AWS-GR_AUDIT_BUCKET_ENCRYPTION_ENABLED`.
 
-## Control Behavior And Guidance
+    3. Extract the control identifier from the Regional identifier, such as `GR_AUDIT_BUCKET_ENCRYPTION_ENABLED`.
 
-[Controls are categorized according to their behavior and their guidance.](https://docs.aws.amazon.com/controltower/latest/userguide/controls.html)
+2. In the `controls` section, in the `organizational_unit_ids` parameter, enter the ID of the organizational unit where you want to enable the control, such as `ou-1111-11111111`. Enter the ID in double quotation marks, and separate multiple IDs with commas. For more information about how to retrieve OU IDs, see Viewing the [details of an OU](https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_org_details.html#orgs_view_ou).
 
-[For a full list of preventive, detective and proactive available controls, see the The AWS Control Tower controls library.](https://docs.aws.amazon.com/controltower/latest/userguide/controls-reference.html)
+3. Save and close the variables.tfvars file. For an example of an updated variables.tfvars file, see the [Additional information](https://docs.aws.amazon.com/prescriptive-guidance/latest/patterns/deploy-and-manage-aws-control-tower-controls-by-using-terraform.html#deploy-and-manage-aws-control-tower-controls-by-using-terraform-additional) section of this pattern.
 
 
 ## Deployment
 
-Initialize Terraform.
+
+
+In the management account, assume the IAM role that has permissions to deploy the Terraform configuration file. For more information about the permissions required and a sample policy, see Least privilege permissions for the IAM role in the [Additional information](https://docs.aws.amazon.com/prescriptive-guidance/latest/patterns/deploy-and-manage-aws-control-tower-controls-by-using-terraform.html#deploy-and-manage-aws-control-tower-controls-by-using-terraform-additional) section. For more information about assuming an IAM role in the AWS CLI, see [Use an IAM role in the AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-role.html).
+
+1. Enter the following command to initialize Terraform.
 ```
 $ terraform init -upgrade
 ```
-Visualize the changes.
+2. Enter the following command to preview the changes compared the current state.
 
 ```
 $ terraform plan -var-file="variables.tfvars"
 ```
-Deploy the resources.
+3. Review the configuration changes in the Terraform plan and confirm that you want to implement these changes in the organization.
+
+4. Enter the following command to deploy the resources.
 ```
 $ terraform apply -var-file="variables.tfvars"
 ```
-Execute the following command to remove and cleanup the resources created in the previous step.
+5. (optional) Enter the following command to remove the resources deployed by this pattern.
 ```
 $ terraform destroy -var-file="variables.tfvars"
 ```
+
+## Least privilege permissions for the IAM role
+
+This APG pattern requires that you assume an IAM role in the management account. Best practice is to assume a role with temporary permissions and limit the permissions according to the principle of least privilege. The following sample policy allows the minimum actions required to enable or disable AWS Control Tower controls.
+```
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "controltower:EnableControl",
+                "controltower:DisableControl",
+                "controltower:GetControlOperation",
+                "controltower:ListEnabledControls",
+                "organizations:AttachPolicy",
+                "organizations:CreatePolicy",
+                "organizations:DeletePolicy",
+                "organizations:DescribeOrganization",
+                "organizations:DetachPolicy",
+                "organizations:ListAccounts",
+                "organizations:ListAWSServiceAccessForOrganization",
+                "organizations:ListChildren",
+                "organizations:ListOrganizationalUnitsForParent",
+                "organizations:ListParents",
+                "organizations:ListPoliciesForTarget",
+                "organizations:ListRoots",
+                "organizations:UpdatePolicy"
+            ],
+            "Resource": "*"
+        }
+    ]
+}
+```
+
 
 ## Authors
 
