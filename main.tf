@@ -64,7 +64,7 @@ locals {
   guardrails_list = flatten([
     for i in range(0, length(var.controls)) : [
       for pair in setproduct(element(var.controls, i).control_names, element(var.controls, i).organizational_unit_ids) :
-      { "arn:aws:controltower:${data.aws_region.current.name}::control/${pair[0]}" = pair[1] }
+      { "arn:aws:controlcatalog:::control/${pair[0]}" = pair[1] }
     ]
   ])
 
