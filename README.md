@@ -3,7 +3,7 @@
 
 - [AWS Prescriptive Guidance](#aws-prescriptive-guidance)
 - [Goal](#goal)
-- [Prerequisites and limitations](#prerequisites-and-limitations)
+- [Prerequisites and Limitations](#prerequisites-and-limitations)
 - [Architecture](#architecture)
 - [Tools](#tools)
 - [Best practices](#best-practices)
@@ -24,24 +24,24 @@ For a complete guide, prerequisites and instructions for using this AWS Prescrip
 
 ## Goal
 
-This pattern describes how to use AWS Control Tower controls, HashiCorp Terraform, and infrastructure as code (IaC) to implement and administer preventive, detective, and proactive security controls. A control (also known as a guardrail) is a high-level rule that provides ongoing governance for your overall AWS Control Tower environment. For example, you can use controls to require logging for your AWS accounts and then configure automatic notifications if specific security-related events occur.
+This pattern describes how to use AWS Control Tower controls, HashiCorp Terraform, and infrastructure as code (IaC) to implement and administer preventive, detective, and proactive security controls. A [control](https://docs.aws.amazon.com/controltower/latest/userguide/controls.html) (also known as a guardrail) is a high-level rule that provides ongoing governance for your overall AWS Control Tower environment. For example, you can use controls to require logging for your AWS accounts and then configure automatic notifications if specific security-related events occur.
 
 AWS Control Tower helps you implement preventive, detective, and proactive controls that govern your AWS resources and monitor compliance across multiple AWS accounts. Each control enforces a single rule. In this pattern, you use a provided IaC template to specify which controls you want to deploy in your environment.
 
-AWS Control Tower controls apply to an entire organizational unit (OU), and the control affects every AWS account within the OU. Therefore, when users perform any action in any account in your landing zone, the action is subject to the controls that govern the OU.
+AWS Control Tower controls apply to an entire [organizational unit (OU)](https://docs.aws.amazon.com/organizations/latest/userguide/orgs_getting-started_concepts.html#organizationalunit), and the control affects every AWS account within the OU. Therefore, when users perform any action in any account in your landing zone, the action is subject to the controls that govern the OU.
 
 Implementing AWS Control Tower controls helps establish a strong security foundation for your AWS landing zone. By using this pattern to deploy the controls as IaC through Terraform, you can standardize the controls in your landing zone and more efficiently deploy and manage them.
 
-### Target Audience
+### Intended Audience
 
 This pattern is recommended for users who have experience with AWS Control Tower, Terraform, and AWS Organizations.
 
 
-## Prerequisites and limitations
+## Prerequisites and Limitations
 
 ### Prerequisites
 
-- Active AWS accounts managed as an organization in AWS Organizations and an AWS Control Tower landing zone. For instructions, see [Create an account structure](https://www.wellarchitectedlabs.com/cost/100_labs/100_1_aws_account_setup/2_account_structure/) (AWS Well-Architected Labs).
+- Active AWS accounts managed as an organization in AWS Organizations and an AWS Control Tower landing zone. For instructions, see [Getting started](https://docs.aws.amazon.com/controltower/latest/userguide/getting-started-with-control-tower.html) in the AWS Control Tower documentation.
 
 - AWS Command Line Interface (AWS CLI), [installed](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) and [configured](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html).
 
@@ -57,6 +57,14 @@ This pattern is recommended for users who have experience with AWS Control Tower
 
 - Terraform backend, [configured](https://developer.hashicorp.com/terraform/language/settings/backends/configuration#using-a-backend-block) (Terraform documentation).
 
+### Limitations
+
+- For AWS Control Tower controls, this pattern requires the use of [global identifiers](https://docs.aws.amazon.com/controltower/latest/controlreference/all-global-identifiers.html) that are in the following format:
+`arn:<PARTITION>:controlcatalog:::control/<CONTROL_CATALOG_OPAQUE_ID>`
+**Note:** In most cases, the value for `<PARTITION>` is aws.
+Previous versions of this pattern used [regional identifiers](https://docs.aws.amazon.com/controltower/latest/controlreference/control-metadata-tables.html) that are no longer supported. We recommend that you migrate from regional identifiers to global identifiers. Global identifiers help you manage controls and expand the number of controls you can use.
+
+
 ## Architecture
 
 This section provides a high-level overview of this solution and the architecture established by the sample code. The following diagram shows controls deployed across the various accounts in the OU.
@@ -67,7 +75,7 @@ AWS Control Tower controls are categorized according to their behavior and their
 
 There are three primary types of control behaviors:
 
-1. Preventive controls are designed to prevent actions from occurring. These are implemented with [service control policies (SCPs)](https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_scps.html) in AWS Organizations. The status of a preventive control is either enforced or not enabled. Preventive controls are supported in all AWS Regions.
+1.	Preventive controls are designed to prevent actions from occurring. These are implemented with [service control policies (SCPs)](https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_scps.html) or [resource control policies (RCPs)](https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_rcps.html) in AWS Organizations. The status of a preventive control is either enforced or not enabled. Preventive controls are supported in all AWS Regions.
 
 2. Detective controls are designed to detect specific events when they occur and log the action in CloudTrail. These are implemented with AWS [Config rules](https://docs.aws.amazon.com/config/latest/developerguide/evaluate-config.html). The status of a detective control is either clear, in violation, or not enabled. Detective controls apply only in those AWS Regions supported by AWS Control Tower.
 
@@ -113,23 +121,23 @@ To deploy this solution, you need
 
 | Name | Version |
 |------|---------|
-| <a name="requirement_ct"></a> [AWS Control Tower](https://aws.amazon.com/controltower/) | >= 3.0 |
+| <a name="requirement_ct"></a> [AWS Control Tower](https://aws.amazon.com/controltower/) | >= 3.2 |
 
 and the following requirements.
 
-<!-- BEGINNING OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
+<!-- BEGIN_TF_DOCS -->
 ## Requirements
 
 | Name | Version |
 |------|---------|
-| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | ~> 1.5 |
-| <a name="requirement_aws"></a> [aws](#requirement\_aws) | ~> 4.67 |
+| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | > 1.5 |
+| <a name="requirement_aws"></a> [aws](#requirement\_aws) | > 4.67 |
 
 ## Providers
 
 | Name | Version |
 |------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | 4.67.0 |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | 5.81.0 |
 
 ## Modules
 
@@ -146,7 +154,6 @@ No modules.
 | [aws_organizations_organizational_units.ous_depth_3](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/organizations_organizational_units) | data source |
 | [aws_organizations_organizational_units.ous_depth_4](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/organizations_organizational_units) | data source |
 | [aws_organizations_organizational_units.root](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/organizations_organizational_units) | data source |
-| [aws_region.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/region) | data source |
 
 ## Inputs
 
@@ -159,7 +166,7 @@ No modules.
 | Name | Description |
 |------|-------------|
 | <a name="output_ous_id_to_arn_map"></a> [ous\_id\_to\_arn\_map](#output\_ous\_id\_to\_arn\_map) | Map from OU id to OU arn for the whole organization |
-<!-- END OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
+<!-- END_TF_DOCS -->
 
 
 ## Controls Configuration File
@@ -169,14 +176,14 @@ The following is an example of an updated `variables.tfvars` file.
 controls = [
     {
         control_names = [
-            "AWS-GR_ENCRYPTED_VOLUMES",
+            "503uicglhjkokaajywfpt6ros",
             ...
         ],
         organizational_unit_ids = ["ou-1111-11111111", "ou-2222-22222222"...],
     },
     {
         control_names = [
-            "AWS-GR_SUBNET_AUTO_ASSIGN_PUBLIC_IP_DISABLED",
+            "50z1ot237wl8u1lv5ufau6qqo",
             ...
         ],
         organizational_unit_ids = ["ou-1111-11111111"...],
@@ -184,17 +191,15 @@ controls = [
 ]
 ```
 
-1. In the `controls` section, in the `control_names` parameter, enter the control API identifier. Each control has a unique API identifier for each Region in which AWS Control Tower is available. To find the control identifier, do the following:
+1. Open [All global identifiers](https://docs.aws.amazon.com/controltower/latest/controlreference/all-global-identifiers.html) in the AWS Control Tower documentation.
 
-    1. In [Tables of control metadata](https://docs.aws.amazon.com/controltower/latest/userguide/control-metadata-tables.html), locate the control you want to enable.
+2. In the JSON-formatted list, locate the control that you want to implement, and then copy its global identifier (also known as the `{CONTROL_CATALOG_OPAQUE_ID}` value). For example, the global identifier for the `AWS-GR_AUDIT_BUCKET_ENCRYPTION_ENABLED` control is `k4izcjxhukijhajp6ks5mjxk`.
 
-    2. In the Control API identifiers, by Region column, locate the API identifier for the Region in which you are making the API call, such as `arn:aws:controltower:us-east-1::control/AWS-GR_AUDIT_BUCKET_ENCRYPTION_ENABLED`.
+3. In the `controls` section, in the `control_names` parameter, enter the global identifier that you copied.
 
-    3. Extract the control identifier from the Regional identifier, such as `GR_AUDIT_BUCKET_ENCRYPTION_ENABLED`.
+4. In the `controls` section, in the `organizational_unit_ids` parameter, enter the ID of the organizational unit where you want to enable the control, such as `ou-1111-11111111`. Enter the ID in double quotation marks, and separate multiple IDs with commas. For more information about how to retrieve OU IDs, see Viewing the [details of an OU](https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_org_details.html#orgs_view_ou).
 
-2. In the `controls` section, in the `organizational_unit_ids` parameter, enter the ID of the organizational unit where you want to enable the control, such as `ou-1111-11111111`. Enter the ID in double quotation marks, and separate multiple IDs with commas. For more information about how to retrieve OU IDs, see Viewing the [details of an OU](https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_org_details.html#orgs_view_ou).
-
-3. Save and close the variables.tfvars file. For an example of an updated variables.tfvars file, see the [Additional information](https://docs.aws.amazon.com/prescriptive-guidance/latest/patterns/deploy-and-manage-aws-control-tower-controls-by-using-terraform.html#deploy-and-manage-aws-control-tower-controls-by-using-terraform-additional) section of this pattern.
+5. Save and close the variables.tfvars file. For an example of an updated variables.tfvars file, see the [Additional information](https://docs.aws.amazon.com/prescriptive-guidance/latest/patterns/deploy-and-manage-aws-control-tower-controls-by-using-terraform.html#deploy-and-manage-aws-control-tower-controls-by-using-terraform-additional) section of this pattern.
 
 
 ## Deployment

@@ -9,7 +9,7 @@ fail_fast: False
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.4.0 # Get the latest from: https://github.com/pre-commit/pre-commit-hooks/releases
+    rev: v5.0.0 # Get the latest from: https://github.com/pre-commit/pre-commit-hooks/releases
     hooks:
       - id: check-added-large-files
       - id: check-case-conflict
@@ -39,12 +39,12 @@ repos:
         stages: [commit-msg]
 
   - repo: https://github.com/asottile/add-trailing-comma
-    rev: v2.5.1 # Get the latest from: https://github.com/asottile/add-trailing-comma
+    rev: v3.1.0 # Get the latest from: https://github.com/asottile/add-trailing-comma
     hooks:
       - id: add-trailing-comma
 
   - repo: https://github.com/gruntwork-io/pre-commit
-    rev: v0.1.22 # Get the latest from: https://github.com/gruntwork-io/pre-commit/releases
+    rev: v0.1.24 # Get the latest from: https://github.com/gruntwork-io/pre-commit/releases
     hooks:
       - id: terraform-validate
       - id: terraform-fmt
@@ -53,7 +53,7 @@ repos:
       - id: golint
 
   - repo: https://github.com/antonbabenko/pre-commit-terraform
-    rev: v1.81.0 # Get the latest from: https://github.com/antonbabenko/pre-commit-terraform/releases
+    rev: v1.96.2 # Get the latest from: https://github.com/antonbabenko/pre-commit-terraform/releases
     hooks:
       - id: terraform_fmt
       - id: terraform_tflint
@@ -66,7 +66,7 @@ repos:
       - id: terraform_checkov
 
   - repo: https://github.com/ambv/black
-    rev: 23.3.0 # Get the latest from: https://github.com/psf/black/releases
+    rev: 24.10.0 # Get the latest from: https://github.com/psf/black/releases
     hooks:
     - id: black
       language_version: python3
