@@ -16,8 +16,6 @@
 
 # AWS Control Tower Controls (sometimes called Guardrails) Terraform Module
 
-data "aws_region" "current" {}
-
 data "aws_organizations_organization" "organization" {}
 
 # Get OUs data resources up to five levels of OUs deep under a root (maximum nesting quota limit)
