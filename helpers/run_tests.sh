@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: MIT-0
 
@@ -14,29 +16,28 @@
 # IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-# AWS Control Tower Controls (sometimes called Guardrails) Input Variable Types
+set -o errexit
+set -o verbose
 
-variable "controls" {
+targets=(controlcatalog_list_controls.py)
 
-  type = list(object({
-    control_names           = list(string)
-    organizational_unit_ids = list(string)
-  }))
+# Find common security issues (https://bandit.readthedocs.io)
+bandit --recursive "${targets[@]}"
 
-  default     = []
-  description = "Configuration of AWS Control Tower Controls (sometimes called Guardrails) without parameters and tags"
-}
+# Python code formatter (https://black.readthedocs.io)
+black --check --diff "${targets[@]}"
 
-variable "controls_with_params" {
-  type = list(
-    object({
-      control_names = list(map(object({
-        parameters = optional(map(list(string)))
-      })))
-      organizational_unit_ids = list(string)
-    })
-  )
+# Style guide enforcement (https://flake8.pycqa.org)
+flake8 --config .flake8 "${targets[@]}"
 
-  default     = []
-  description = "Configuration of AWS Control Tower Controls (sometimes called Guardrails) with parameters"
-}
+# Sort imports (https://pycqa.github.io/isort)
+isort --settings-path .isort.cfg --check --diff "${targets[@]}"
+
+# Static type checker (https://mypy.readthedocs.io)
+mypy --config-file .mypy.ini "${targets[@]}"
+
+# Check for errors, enforce a coding standard, look for code smells (http://pylint.pycqa.org)
+pylint --rcfile .pylintrc "${targets[@]}"
+
+# Report code complexity (https://radon.readthedocs.io)
+radon mi "${targets[@]}"
