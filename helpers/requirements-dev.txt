@@ -1,0 +1,10 @@
+boto3
+pandas
+isort
+flake8
+bandit
+black
+mypy
+pandas-stubs
+pylint
+radon

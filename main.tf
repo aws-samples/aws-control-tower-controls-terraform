@@ -58,11 +58,42 @@ data "aws_organizations_organizational_units" "ous_depth_4" {
 
 locals {
 
+  # Combine both types of controls
+  normalized_controls = concat(
+    # Convert simple controls to the complex format
+    [
+      for group in var.controls : {
+        control_names = [
+          for control in group.control_names : {
+            (control) = {}
+          }
+        ]
+        organizational_unit_ids = group.organizational_unit_ids
+      }
+    ],
+    var.controls_with_params
+  )
+
   # Extract Guardrails configuration
   guardrails_list = flatten([
-    for i in range(0, length(var.controls)) : [
-      for pair in setproduct(element(var.controls, i).control_names, element(var.controls, i).organizational_unit_ids) :
-      { "arn:aws:controlcatalog:::control/${pair[0]}" = pair[1] }
+    for control_group in local.normalized_controls : [
+      for control in control_group.control_names : [
+        for ou_id in control_group.organizational_unit_ids : {
+          control_id = keys(control)[0]
+          ou_id      = ou_id
+          parameters = try(
+            # Get parameters if they exist, filter out empty lists
+            {
+              for k, v in values(control)[0].parameters :
+              k => v
+              if length(v) > 0
+            },
+            null
+          )
+          # parameters  = try(values(control)[0].parameters, null)
+          tags = try(values(control)[0].tags, null)
+        }
+      ]
     ]
   ])
 
@@ -79,11 +110,17 @@ locals {
 }
 
 resource "aws_controltower_control" "guardrails" {
+  for_each = { for item in local.guardrails_list : "${item.control_id}:${item.ou_id}" => item }
 
-  for_each = { for control in local.guardrails_list : join(":", [keys(control)[0], values(control)[0]]) => [keys(control)[0], values(control)[0]] }
+  control_identifier = "arn:aws:controlcatalog:::control/${each.value.control_id}"
+  target_identifier  = local.ous_id_to_arn_map[each.value.ou_id]
 
-  control_identifier = each.value[0]
-
-  target_identifier = local.ous_id_to_arn_map[each.value[1]]
+  dynamic "parameters" {
+    for_each = each.value.parameters != null ? each.value.parameters : {}
+    content {
+      key   = parameters.key
+      value = jsonencode(parameters.value)
+    }
+  }
 
 }

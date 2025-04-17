@@ -14,6 +14,7 @@
   - [Inputs](#inputs)
   - [Outputs](#outputs)
 - [Controls Configuration File](#controls-configuration-file)
+- [AWS Control Catalog](#aws-control-catalog)
 - [Authors](#authors)
 - [Security](#security)
 - [License](#license)
@@ -137,7 +138,7 @@ and the following requirements.
 
 | Name | Version |
 |------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | 5.81.0 |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | 5.94.1 |
 
 ## Modules
 
@@ -159,7 +160,8 @@ No modules.
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
-| <a name="input_controls"></a> [controls](#input\_controls) | Configuration of AWS Control Tower Guardrails for the whole organization | <pre>list(object({<br>    control_names           = list(string)<br>    organizational_unit_ids = list(string)<br>  }))</pre> | n/a | yes |
+| <a name="input_controls"></a> [controls](#input\_controls) | Configuration of AWS Control Tower Controls (sometimes called Guardrails) without parameters and tags | <pre>list(object({<br/>    control_names           = list(string)<br/>    organizational_unit_ids = list(string)<br/>  }))</pre> | `[]` | no |
+| <a name="input_controls_with_params"></a> [controls\_with\_params](#input\_controls\_with\_params) | Configuration of AWS Control Tower Controls (sometimes called Guardrails) with parameters | <pre>list(<br/>    object({<br/>      control_names = list(map(object({<br/>        parameters = optional(map(list(string)))<br/>      })))<br/>      organizational_unit_ids = list(string)<br/>    })<br/>  )</pre> | `[]` | no |
 
 ## Outputs
 
@@ -176,18 +178,54 @@ The following is an example of an updated `variables.tfvars` file.
 controls = [
     {
         control_names = [
-            "503uicglhjkokaajywfpt6ros",
+            "503uicglhjkokaajywfpt6ros", # AWS-GR_ENCRYPTED_VOLUMES
             ...
         ],
         organizational_unit_ids = ["ou-1111-11111111", "ou-2222-22222222"...],
     },
     {
         control_names = [
-            "50z1ot237wl8u1lv5ufau6qqo",
+            "50z1ot237wl8u1lv5ufau6qqo", # AWS-GR_SUBNET_AUTO_ASSIGN_PUBLIC_IP_DISABLED
             ...
         ],
         organizational_unit_ids = ["ou-1111-11111111"...],
     },
+]
+
+controls_with_params = [
+  {
+    control_names = [
+      { "7mo7a2h2ebsq71l8k6uzr96ou" = { # CT.S3.PV.5
+        parameters = {
+          "ExemptedPrincipalArns" : ["arn:aws:iam::*:role/RoleName"],
+          "ExemptedResourceArns" : [],
+        }
+      } },
+      { "dvhe47fxg5o6lryqrq9g6sxg4" = { # CT.SECRETSMANAGER.PV.1
+        parameters = {
+          "ExemptedPrincipalArns" : ["arn:aws:iam::*:role/RoleName"],
+        }
+      } },
+      ...
+    ],
+    organizational_unit_ids = ["ou-1111-11111111"...]
+  },
+  {
+    control_names = [
+      { "dvuaav61i5cnfazfelmvn9m6k" = { # AWS-GR_DISALLOW_CROSS_REGION_NETWORKING
+        parameters = {
+          "ExemptedPrincipalArns" : ["arn:aws:iam::*:role/RoleName"],
+        }
+      } },
+      { "41ngl8m5c4eb1myoz0t707n7h" = { # AWS-GR_DISALLOW_VPC_INTERNET_ACCESS
+        parameters = {
+          "ExemptedPrincipalArns" : ["arn:aws:iam::*:role/RoleName"],
+        }
+      } },
+      ...
+    ],
+    organizational_unit_ids = ["ou-2222-22222222"...]
+  }
 ]
 ```
 
@@ -241,20 +279,40 @@ This APG pattern requires that you assume an IAM role in the management account.
                 "controltower:EnableControl",
                 "controltower:DisableControl",
                 "controltower:GetControlOperation",
+                "controltower:GetEnabledControl",
+                "controltower:ListControlOperations",
                 "controltower:ListEnabledControls",
+                "controltower:ListTagsForResource",
+                "controltower:ResetEnabledControl",
+                "controltower:TagResource",
+                "controltower:UntagResource",
+                "controltower:UpdateEnabledControl",
                 "organizations:AttachPolicy",
                 "organizations:CreatePolicy",
+                "organizations:DeleteResourcePolicy",
                 "organizations:DeletePolicy",
                 "organizations:DescribeOrganization",
+                "organizations:DescribeOrganizationalUnit",
+                "organizations:DescribePolicy",
+                "organizations:DescribeResourcePolicy",
                 "organizations:DetachPolicy",
+                "organizations:DisablePolicyType",
+                "organizations:EnablePolicyType",
                 "organizations:ListAccounts",
                 "organizations:ListAWSServiceAccessForOrganization",
                 "organizations:ListChildren",
                 "organizations:ListOrganizationalUnitsForParent",
                 "organizations:ListParents",
+                "organizations:ListPolicies",
                 "organizations:ListPoliciesForTarget",
                 "organizations:ListRoots",
-                "organizations:UpdatePolicy"
+                "organizations:ListTagsForResource",
+                "organizations:ListTargetsForPolicy",
+                "organizations:TagResource",
+                "organizations:PutResourcePolicy",
+                "organizations:UntagResource",
+                "organizations:UpdatePolicy",
+                "ssm:GetParameters"
             ],
             "Resource": "*"
         }
@@ -262,6 +320,9 @@ This APG pattern requires that you assume an IAM role in the management account.
 }
 ```
 
+## AWS Control Catalog
+
+An example of exported controls using the AWS Control Catalog API is provided in the helpers folder [here](helpers/controlcatalog_list_controls.csv).
 
 ## Authors
 
